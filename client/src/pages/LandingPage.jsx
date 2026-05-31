@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { FaGithub } from 'react-icons/fa'
 import { 
   FiSearch, 
   FiUsers, 
@@ -63,6 +64,15 @@ const LandingPage = () => {
             StackIt
           </Link>
           <div className="flex items-center space-x-4">
+            <a
+              href="https://github.com/Ashmita1206/StackIt"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="GitHub"
+              className="text-navy-700 hover:text-primary-600 dark:text-navy-200 dark:hover:text-primary-400 transition-colors"
+            >
+              <FaGithub className="w-6 h-6" />
+            </a>
             <Link to="/login" className="btn-outline">
               Sign In
             </Link>
@@ -251,7 +261,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="border-t border-navy-700 mt-8 pt-8 text-center text-navy-300">
-            <p>&copy; 2024 StackIt. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} StackIt. All rights reserved.</p>
           </div>
         </div>
       </footer>
