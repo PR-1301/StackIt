@@ -109,9 +109,6 @@ const QuestionDetailPage = () => {
 
   const submitAnswerMutation = useMutation(
     (content) => {
-      console.log('🔍 Frontend Debug - Submitting answer for question ID:', id);
-      console.log('🔍 Frontend Debug - Answer content:', content);
-      console.log('🔍 Frontend Debug - API call:', `/answers/${id}`);
       return api.post(`/answers/${id}`, { content });
     },
     {

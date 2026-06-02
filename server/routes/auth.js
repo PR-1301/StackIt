@@ -1,5 +1,7 @@
 const express = require('express')
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
+const axios = require('axios')
 const { body, validationResult } = require('express-validator')
 const User = require('../models/User')
 const { authenticateToken } = require('../middleware/auth')
@@ -12,6 +14,319 @@ const generateToken = (userId) => {
     expiresIn: '7d'
   })
 }
+
+const getServerBaseUrl = (req) => {
+  return (process.env.SERVER_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '')
+}
+
+const getClientBaseUrl = () => {
+  return (process.env.CLIENT_URL || 'http://localhost:3000').replace(/\/$/, '')
+}
+
+const getRedirectUri = (provider, req) => {
+  const envKey = `${provider.toUpperCase()}_CALLBACK_URL`
+  return process.env[envKey] || `${getServerBaseUrl(req)}/api/auth/${provider}/callback`
+}
+
+const createOAuthState = (provider, extra = {}) => {
+  return jwt.sign({
+    provider,
+    nonce: crypto.randomBytes(16).toString('hex'),
+    ...extra
+  }, process.env.JWT_SECRET || 'your-secret-key', {
+    expiresIn: '10m'
+  })
+}
+
+const verifyOAuthState = (state, provider) => {
+  const decoded = jwt.verify(state, process.env.JWT_SECRET || 'your-secret-key')
+  if (decoded.provider !== provider) {
+    throw new Error('OAuth state provider mismatch')
+  }
+  return decoded
+}
+
+const base64Url = (buffer) => {
+  return buffer
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+}
+
+const createPkcePair = () => {
+  const verifier = base64Url(crypto.randomBytes(32))
+  const challenge = base64Url(crypto.createHash('sha256').update(verifier).digest())
+  return { verifier, challenge }
+}
+
+const getProviderConfig = (provider, req) => {
+  const configs = {
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      redirectUri: getRedirectUri('google', req),
+      authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+      tokenUrl: 'https://oauth2.googleapis.com/token',
+      scope: 'openid email profile'
+    },
+    twitter: {
+      clientId: process.env.TWITTER_CLIENT_ID,
+      clientSecret: process.env.TWITTER_CLIENT_SECRET,
+      redirectUri: getRedirectUri('twitter', req),
+      authorizationUrl: 'https://x.com/i/oauth2/authorize',
+      tokenUrl: 'https://api.x.com/2/oauth2/token',
+      scope: 'users.read tweet.read'
+    }
+  }
+
+  return configs[provider]
+}
+
+const requireProviderConfig = (provider, req, res) => {
+  const config = getProviderConfig(provider, req)
+  if (!config || !config.clientId || !config.clientSecret) {
+    const callbackUrl = getRedirectUri(provider, req)
+    console.error(`OAuth ${provider} is missing credentials. Expected callback URL: ${callbackUrl}`)
+    res.status(503).json({
+      message: `${provider} OAuth is not configured`,
+      required: [
+        `${provider.toUpperCase()}_CLIENT_ID`,
+        `${provider.toUpperCase()}_CLIENT_SECRET`,
+        `${provider.toUpperCase()}_CALLBACK_URL`
+      ],
+      callbackUrl
+    })
+    return null
+  }
+  return config
+}
+
+const sanitizeUsername = (value, fallback) => {
+  const source = value || fallback || 'oauth_user'
+  let username = source
+    .toString()
+    .split('@')[0]
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 20)
+
+  if (username.length < 3) {
+    username = `user_${username}`.slice(0, 20)
+  }
+
+  return username || `user_${crypto.randomBytes(4).toString('hex')}`
+}
+
+const getAvailableUsername = async (baseUsername) => {
+  const base = sanitizeUsername(baseUsername)
+
+  for (let index = 0; index < 100; index += 1) {
+    const suffix = index === 0 ? '' : `_${index}`
+    const candidate = `${base.slice(0, 20 - suffix.length)}${suffix}`
+    const existingUser = await User.findOne({ username: candidate })
+
+    if (!existingUser) {
+      return candidate
+    }
+  }
+
+  return `user_${crypto.randomBytes(7).toString('hex')}`.slice(0, 20)
+}
+
+const findOrCreateOAuthUser = async (provider, profile) => {
+  const providerIdPath = `oauthProviders.${provider}.id`
+  let user = await User.findOne({ [providerIdPath]: profile.id })
+
+  if (!user && profile.email && !profile.email.endsWith('@oauth.stackit.local')) {
+    user = await User.findOne({ email: profile.email.toLowerCase() })
+  }
+
+  if (!user) {
+    const oauthProviders = provider === 'google'
+      ? { google: { id: profile.id, email: profile.email } }
+      : { twitter: { id: profile.id, username: profile.username } }
+
+    user = await User.create({
+      username: await getAvailableUsername(profile.username || profile.name || profile.email),
+      email: profile.email.toLowerCase(),
+      password: crypto.randomBytes(32).toString('hex'),
+      avatar: profile.avatar || '',
+      isVerified: !!profile.isVerified,
+      oauthProviders
+    })
+    return user
+  }
+
+  user.oauthProviders = user.oauthProviders || {}
+  if (provider === 'google') {
+    user.oauthProviders.google = {
+      id: profile.id,
+      email: profile.email
+    }
+  } else {
+    user.oauthProviders.twitter = {
+      id: profile.id,
+      username: profile.username
+    }
+  }
+
+  if (!user.avatar && profile.avatar) {
+    user.avatar = profile.avatar
+  }
+
+  if (profile.isVerified) {
+    user.isVerified = true
+  }
+
+  user.lastSeen = new Date()
+  await user.save()
+  return user
+}
+
+const exchangeGoogleCode = async (config, code) => {
+  const tokenResponse = await axios.post(config.tokenUrl, new URLSearchParams({
+    code,
+    client_id: config.clientId,
+    client_secret: config.clientSecret,
+    redirect_uri: config.redirectUri,
+    grant_type: 'authorization_code'
+  }), {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  })
+
+  const profileResponse = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+    headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
+  })
+
+  const profile = profileResponse.data
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: profile.name,
+    username: profile.email || profile.name,
+    avatar: profile.picture,
+    isVerified: profile.verified_email
+  }
+}
+
+const exchangeTwitterCode = async (config, code, codeVerifier) => {
+  const basicAuth = Buffer
+    .from(`${config.clientId}:${config.clientSecret}`)
+    .toString('base64')
+
+  const tokenResponse = await axios.post(config.tokenUrl, new URLSearchParams({
+    client_id: config.clientId,
+    code,
+    grant_type: 'authorization_code',
+    redirect_uri: config.redirectUri,
+    code_verifier: codeVerifier
+  }), {
+    headers: {
+      Authorization: `Basic ${basicAuth}`,
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+
+  const profileResponse = await axios.get('https://api.x.com/2/users/me', {
+    params: {
+      'user.fields': 'profile_image_url'
+    },
+    headers: { Authorization: `Bearer ${tokenResponse.data.access_token}` }
+  })
+
+  const profile = profileResponse.data.data
+  return {
+    id: profile.id,
+    email: `twitter_${profile.id}@oauth.stackit.local`,
+    name: profile.name,
+    username: profile.username,
+    avatar: profile.profile_image_url,
+    isVerified: false
+  }
+}
+
+const redirectWithOAuthError = (res, provider, error) => {
+  const callbackUrl = new URL('/auth/callback', getClientBaseUrl())
+  callbackUrl.searchParams.set('provider', provider)
+  callbackUrl.searchParams.set('error', error)
+  return res.redirect(callbackUrl.toString())
+}
+
+// @route   GET /api/auth/:provider
+// @desc    Start OAuth login with Google or Twitter/X
+// @access  Public
+router.get('/:provider(google|twitter)', (req, res) => {
+  const { provider } = req.params
+  const config = requireProviderConfig(provider, req, res)
+  if (!config) return
+
+  const pkce = provider === 'twitter' ? createPkcePair() : null
+  const state = createOAuthState(provider, pkce ? { codeVerifier: pkce.verifier } : {})
+  const authorizationUrl = new URL(config.authorizationUrl)
+
+  authorizationUrl.searchParams.set('client_id', config.clientId)
+  authorizationUrl.searchParams.set('redirect_uri', config.redirectUri)
+  authorizationUrl.searchParams.set('response_type', 'code')
+  authorizationUrl.searchParams.set('scope', config.scope)
+  authorizationUrl.searchParams.set('state', state)
+
+  if (provider === 'google') {
+    authorizationUrl.searchParams.set('access_type', 'offline')
+    authorizationUrl.searchParams.set('prompt', 'select_account')
+  }
+
+  if (pkce) {
+    authorizationUrl.searchParams.set('code_challenge', pkce.challenge)
+    authorizationUrl.searchParams.set('code_challenge_method', 'S256')
+  }
+
+  res.redirect(authorizationUrl.toString().replace(/\+/g, '%20'))
+})
+
+// @route   GET /api/auth/:provider/callback
+// @desc    Complete OAuth login with Google or Twitter/X
+// @access  Public
+router.get('/:provider(google|twitter)/callback', async (req, res) => {
+  const { provider } = req.params
+  const { code, state, error } = req.query
+
+  if (error) {
+    return redirectWithOAuthError(res, provider, error)
+  }
+
+  if (!code || !state) {
+    return redirectWithOAuthError(res, provider, 'missing_oauth_response')
+  }
+
+  const config = requireProviderConfig(provider, req, res)
+  if (!config) return
+
+  try {
+    const decodedState = verifyOAuthState(state, provider)
+    const profile = provider === 'google'
+      ? await exchangeGoogleCode(config, code)
+      : await exchangeTwitterCode(config, code, decodedState.codeVerifier)
+
+    if (!profile.email) {
+      return redirectWithOAuthError(res, provider, 'missing_email')
+    }
+
+    const user = await findOrCreateOAuthUser(provider, profile)
+
+    if (user.isBanned) {
+      return redirectWithOAuthError(res, provider, 'account_banned')
+    }
+
+    const token = generateToken(user._id)
+    const callbackUrl = `${getClientBaseUrl()}/auth/callback#token=${encodeURIComponent(token)}&provider=${encodeURIComponent(provider)}`
+    return res.redirect(callbackUrl)
+  } catch (callbackError) {
+    console.error(`${provider} OAuth callback error:`, callbackError.response?.data || callbackError)
+    return redirectWithOAuthError(res, provider, 'oauth_callback_failed')
+  }
+})
 
 // @route   POST /api/auth/signup
 // @desc    Register a new user
@@ -32,7 +347,7 @@ router.post('/signup', [
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Validation failed',
         errors: errors.array()
       })
@@ -100,7 +415,7 @@ router.post('/login', [
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Validation failed',
         errors: errors.array()
       })
@@ -111,12 +426,12 @@ router.post('/login', [
     // Check if user exists
     const user = await User.findOne({ email })
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Email not registered' })
     }
 
     // Check if user is banned
     if (user.isBanned) {
-      return res.status(403).json({ 
+      return res.status(403).json({
         message: 'Account is banned',
         reason: user.banReason
       })
@@ -125,7 +440,7 @@ router.post('/login', [
     // Check password
     const isMatch = await user.comparePassword(password)
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' })
+      return res.status(401).json({ message: 'Password is incorrect' })
     }
 
     // Update last seen
@@ -218,7 +533,7 @@ router.put('/profile', [
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Validation failed',
         errors: errors.array()
       })
@@ -288,7 +603,7 @@ router.post('/change-password', [
   try {
     const errors = validationResult(req)
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Validation failed',
         errors: errors.array()
       })
@@ -318,4 +633,4 @@ router.post('/change-password', [
   }
 })
 
-module.exports = router 
+module.exports = router

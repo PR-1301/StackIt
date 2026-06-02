@@ -9,8 +9,11 @@ import {
   FiArrowRight,
   FiCheckCircle
 } from 'react-icons/fi'
+import { useAuth } from '../contexts/AuthContext'
 
 const LandingPage = () => {
+  const { user, isAuthenticated, loading } = useAuth()
+
   const features = [
     {
       icon: FiSearch,
@@ -73,12 +76,37 @@ const LandingPage = () => {
             >
               <FaGithub className="w-6 h-6" />
             </a>
-            <Link to="/login" className="btn-outline">
-              Sign In
-            </Link>
-            <Link to="/signup" className="btn-primary">
-              Get Started
-            </Link>
+            {!loading && isAuthenticated ? (
+              <Link
+                to={`/profile/${user?.username}`}
+                className="flex items-center space-x-2 group"
+                id="landing-profile-link"
+              >
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.username}
+                    className="w-9 h-9 rounded-full border-2 border-primary-400 group-hover:border-primary-500 transition-all shadow-md group-hover:shadow-lg"
+                  />
+                ) : (
+                  <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-accent-500 rounded-full flex items-center justify-center text-white font-semibold text-sm border-2 border-primary-400 group-hover:border-primary-500 transition-all shadow-md group-hover:shadow-lg">
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="hidden sm:block text-sm font-medium text-navy-700 dark:text-navy-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                  {user?.username}
+                </span>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="btn-outline">
+                  Sign In
+                </Link>
+                <Link to="/signup" className="btn-primary">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -99,13 +127,22 @@ const LandingPage = () => {
               Ask questions, share knowledge, and build your reputation in a community of experts and learners.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/signup" className="btn-primary text-lg px-8 py-4 inline-flex items-center">
-                Start Asking Questions
-                <FiArrowRight className="ml-2" />
-              </Link>
-              <Link to="/questions" className="btn-outline text-lg px-8 py-4">
-                Browse Questions
-              </Link>
+              {isAuthenticated ? (
+                <Link to="/questions" className="btn-primary text-lg px-8 py-4 inline-flex items-center">
+                  Go to Dashboard
+                  <FiArrowRight className="ml-2" />
+                </Link>
+              ) : (
+                <>
+                  <Link to="/signup" className="btn-primary text-lg px-8 py-4 inline-flex items-center">
+                    Start Asking Questions
+                    <FiArrowRight className="ml-2" />
+                  </Link>
+                  <Link to="/questions" className="btn-outline text-lg px-8 py-4">
+                    Browse Questions
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         </div>

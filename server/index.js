@@ -12,16 +12,13 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') })
 
 // Fallback: manually set JWT_SECRET if .env loading failed
 if (!process.env.JWT_SECRET) {
-  console.log('🔧 JWT_SECRET not loaded from .env, setting manually')
+  console.warn('JWT_SECRET not loaded from .env, using development fallback')
   process.env.JWT_SECRET = 'stackit-super-secret-jwt-key-2024-change-in-production'
   process.env.PORT = process.env.PORT || '5000'
   process.env.NODE_ENV = process.env.NODE_ENV || 'development'
   process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/stackit'
   process.env.CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000'
 }
-
-console.log('✅ JWT_SECRET loaded:', !!process.env.JWT_SECRET)
-console.log('✅ JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0)
 
 const connectDB = require('./config/db')
 const authRoutes = require('./routes/auth')
@@ -35,6 +32,8 @@ const notificationRoutes = require('./routes/notifications')
 const { authenticateSocket } = require('./middleware/auth')
 
 const app = express()
+app.set('trust proxy', 1)
+
 const server = createServer(app)
 
 // Socket.io setup
@@ -51,7 +50,7 @@ const shouldEnableRateLimit = () => {
   if (process.env.RATE_LIMIT_ENABLED !== undefined) {
     return process.env.RATE_LIMIT_ENABLED === 'true'
   }
-  
+
   // Production: always enabled
   // Development: disabled by default
   return process.env.NODE_ENV === 'production'
@@ -62,7 +61,7 @@ const getRateLimitMax = () => {
   if (process.env.RATE_LIMIT_MAX) {
     return parseInt(process.env.RATE_LIMIT_MAX)
   }
-  
+
   // Production: 100 requests per 15 minutes
   // Development: 1,000,000 requests (effectively unlimited)
   return process.env.NODE_ENV === 'production' ? 100 : 1000000
@@ -76,11 +75,8 @@ const limiter = rateLimit({
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 })
 
-// Log rate limiting configuration
 if (shouldEnableRateLimit()) {
-  console.log(`🔒 Rate limiting: ${getRateLimitMax()} requests per 15 minutes`)
-} else {
-  console.log('🔓 Rate limiting: DISABLED')
+  console.log(`Rate limiting enabled: ${getRateLimitMax()} requests per 15 minutes`)
 }
 
 // Middleware
@@ -89,7 +85,9 @@ app.use(cors({
   origin: process.env.CLIENT_URL || "http://localhost:3000",
   credentials: true
 }))
-app.use(morgan('combined'))
+if (process.env.NODE_ENV === 'production' || process.env.REQUEST_LOGGING_ENABLED === 'true') {
+  app.use(morgan('combined'))
+}
 
 // Apply rate limiting conditionally
 if (shouldEnableRateLimit()) {
@@ -98,12 +96,6 @@ if (shouldEnableRateLimit()) {
 
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
-
-// Debug middleware to log all requests
-app.use((req, res, next) => {
-  console.log(`🔍 ${req.method} ${req.originalUrl} - ${new Date().toISOString()}`);
-  next();
-});
 
 // Routes
 app.use('/api/auth', authRoutes)
@@ -124,8 +116,6 @@ app.get('/api/health', (req, res) => {
 io.use(authenticateSocket)
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.userId)
-
   // Join user to their personal room
   socket.join(`user:${socket.userId}`)
 
@@ -157,18 +147,13 @@ io.on('connection', (socket) => {
   socket.on('leave-question', (questionId) => {
     socket.leave(`question:${questionId}`)
   })
-
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.userId)
-  })
 })
 
 // Global error handling middleware
 app.use((err, req, res, next) => {
-  console.error('❌ Global error handler caught:', err)
-  console.error('❌ Error stack:', err.stack)
-  res.status(500).json({ 
-    message: 'Internal Server Error', 
+  console.error('Unhandled server error:', err)
+  res.status(500).json({
+    message: 'Internal Server Error',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   })
 })
@@ -183,21 +168,9 @@ const PORT = process.env.PORT || 5000
 const startServer = async () => {
   try {
     await connectDB()
-    
-    // Debug environment variables
-    console.log('🔍 Server Debug - JWT_SECRET exists:', !!process.env.JWT_SECRET)
-    console.log('🔍 Server Debug - JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0)
-    console.log('🔍 Server Debug - NODE_ENV:', process.env.NODE_ENV)
-    console.log('🔍 Server Debug - PORT:', process.env.PORT || 5000)
-    
+
     server.listen(PORT, () => {
-      console.log(`✅ Server running at http://localhost:${PORT}`)
-      console.log('✅ Ensure Vite proxy forwards /api calls correctly to the server.')
-      console.log('✅ Available routes:')
-      console.log('   - POST /api/answers/:questionId (create answer)')
-      console.log('   - GET /api/answers/question/:questionId (get answers)')
-      console.log('   - PUT /api/answers/:answerId (update answer)')
-      console.log('   - DELETE /api/answers/:answerId (delete answer)')
+      console.log(`Server running at http://localhost:${PORT}`)
     })
   } catch (error) {
     console.error('Failed to start server:', error)
@@ -207,4 +180,4 @@ const startServer = async () => {
 
 startServer()
 
-module.exports = { app, io } 
+module.exports = { app, io }

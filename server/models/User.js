@@ -23,6 +23,16 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  oauthProviders: {
+    google: {
+      id: String,
+      email: String
+    },
+    twitter: {
+      id: String,
+      username: String
+    }
+  },
   bio: {
     type: String,
     maxlength: 500,
@@ -81,6 +91,8 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ username: 1 })
 userSchema.index({ email: 1 })
 userSchema.index({ reputation: -1 })
+userSchema.index({ 'oauthProviders.google.id': 1 }, { sparse: true })
+userSchema.index({ 'oauthProviders.twitter.id': 1 }, { sparse: true })
 
 // Virtual for question count
 userSchema.virtual('questionCount', {
@@ -101,7 +113,7 @@ userSchema.virtual('answerCount', {
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next()
-  
+
   try {
     const salt = await bcrypt.genSalt(12)
     this.password = await bcrypt.hash(this.password, salt)
@@ -146,4 +158,4 @@ userSchema.methods.toJSON = function() {
   return user
 }
 
-module.exports = mongoose.model('User', userSchema) 
+module.exports = mongoose.model('User', userSchema)

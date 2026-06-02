@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
+import AuthCallbackPage from './pages/AuthCallbackPage'
 import QuestionsFeed from './pages/QuestionsFeed'
 import AskQuestionPage from './pages/AskQuestionPage'
 import QuestionDetailPage from './pages/QuestionDetailPage'
@@ -13,6 +14,7 @@ import TagManagementPage from './pages/TagManagementPage'
 import SettingsPage from './pages/SettingsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
+import ProfileRedirect from './components/ProfileRedirect'
 
 const routes = [
   {
@@ -36,6 +38,10 @@ const routes = [
         element: <SignUpPage />
       },
       {
+        path: 'auth/callback',
+        element: <AuthCallbackPage />
+      },
+      {
         path: 'questions',
         element: <Layout><QuestionsFeed /></Layout>
       },
@@ -46,6 +52,10 @@ const routes = [
       {
         path: 'ask',
         element: <ProtectedRoute><Layout><AskQuestionPage /></Layout></ProtectedRoute>
+      },
+      {
+        path: 'profile',
+        element: <ProfileRedirect />
       },
       {
         path: 'profile/:username',
@@ -67,4 +77,4 @@ const routes = [
   }
 ]
 
-export default routes 
+export default routes
