@@ -95,7 +95,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(403).json({ message: 'Not authorized' })
     }
 
-    await notification.remove()
+    await notification.deleteOne()
     res.json({ message: 'Notification deleted successfully' })
   } catch (error) {
     console.error('Error deleting notification:', error)
@@ -118,4 +118,4 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
   }
 })
 
-module.exports = router 
+module.exports = router

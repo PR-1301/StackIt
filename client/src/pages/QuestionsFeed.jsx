@@ -1,39 +1,44 @@
-import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { useQuery } from 'react-query'
-import { motion } from 'framer-motion'
-import { 
-  FiSearch, 
-  FiFilter, 
-  FiTrendingUp, 
-  FiClock, 
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useQuery } from 'react-query';
+import { motion } from 'framer-motion';
+import {
+  FiSearch,
+  FiFilter,
+  FiTrendingUp,
+  FiClock,
   FiMessageSquare,
   FiThumbsUp,
   FiEye,
-  FiTag
-} from 'react-icons/fi'
-import api from '../utils/api'
-import QuestionCard from '../components/QuestionCard'
-import TagFilter from '../components/TagFilter'
+  FiTag,
+} from 'react-icons/fi';
+import api from '../utils/api';
+import QuestionCard from '../components/QuestionCard';
+import TagFilter from '../components/TagFilter';
 
 const QuestionsFeed = () => {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedTags, setSelectedTags] = useState([])
-  const [sortBy, setSortBy] = useState('newest')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [sortBy, setSortBy] = useState('newest');
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     status: 'all',
-    timeRange: 'all'
-  })
+    timeRange: 'all',
+  });
 
-  const { data: questionsData, isLoading, error, refetch } = useQuery(
+  const {
+    data: questionsData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery(
     ['questions', searchTerm, selectedTags, sortBy, currentPage, filters],
     () => fetchQuestions(),
     {
       keepPreviousData: true,
       staleTime: 30000,
     }
-  )
+  );
 
   const fetchQuestions = async () => {
     const params = new URLSearchParams({
@@ -44,42 +49,44 @@ const QuestionsFeed = () => {
       tags: selectedTags.join(','),
       status: filters.status,
       timeRange: filters.timeRange,
-    })
+    });
 
-    const response = await api.get(`/questions?${params}`)
-    return response.data
-  }
+    const response = await api.get(`api/questions?${params}`);
+    return response.data;
+  };
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    setCurrentPage(1)
-    refetch()
-  }
+  const handleSearch = e => {
+    e.preventDefault();
+    setCurrentPage(1);
+    refetch();
+  };
 
-  const handleTagFilter = (tags) => {
-    setSelectedTags(tags)
-    setCurrentPage(1)
-  }
+  const handleTagFilter = tags => {
+    setSelectedTags(tags);
+    setCurrentPage(1);
+  };
 
-  const handleSortChange = (newSort) => {
-    setSortBy(newSort)
-    setCurrentPage(1)
-  }
+  const handleSortChange = newSort => {
+    setSortBy(newSort);
+    setCurrentPage(1);
+  };
 
-  const handleFilterChange = (newFilters) => {
-    setFilters(newFilters)
-    setCurrentPage(1)
-  }
+  const handleFilterChange = newFilters => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
 
   if (error) {
     return (
       <div className="text-center py-12">
-        <p className="text-red-600 dark:text-red-400">Error loading questions: {error.message}</p>
+        <p className="text-red-600 dark:text-red-400">
+          Error loading questions: {error.message}
+        </p>
         <button onClick={() => refetch()} className="btn-primary mt-4">
           Try again
         </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -107,7 +114,7 @@ const QuestionsFeed = () => {
             <input
               type="text"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               placeholder="Search questions..."
               className="input-field pl-10 pr-4"
             />
@@ -123,16 +130,22 @@ const QuestionsFeed = () => {
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Sort Options */}
           <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-navy-700 dark:text-navy-300">Sort by:</span>
+            <span className="text-sm font-medium text-navy-700 dark:text-navy-300">
+              Sort by:
+            </span>
             <div className="flex space-x-2">
               {[
                 { value: 'newest', label: 'Newest', icon: FiClock },
                 { value: 'votes', label: 'Most Voted', icon: FiThumbsUp },
-                { value: 'answers', label: 'Most Answers', icon: FiMessageSquare },
+                {
+                  value: 'answers',
+                  label: 'Most Answers',
+                  icon: FiMessageSquare,
+                },
                 { value: 'views', label: 'Most Viewed', icon: FiEye },
                 { value: 'trending', label: 'Trending', icon: FiTrendingUp },
-              ].map((option) => {
-                const Icon = option.icon
+              ].map(option => {
+                const Icon = option.icon;
                 return (
                   <button
                     key={option.value}
@@ -146,17 +159,21 @@ const QuestionsFeed = () => {
                     <Icon className="w-4 h-4 mr-1" />
                     {option.label}
                   </button>
-                )
+                );
               })}
             </div>
           </div>
 
           {/* Filter Options */}
           <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium text-navy-700 dark:text-navy-300">Filter:</span>
+            <span className="text-sm font-medium text-navy-700 dark:text-navy-300">
+              Filter:
+            </span>
             <select
               value={filters.status}
-              onChange={(e) => handleFilterChange({ ...filters, status: e.target.value })}
+              onChange={e =>
+                handleFilterChange({ ...filters, status: e.target.value })
+              }
               className="input-field py-1 px-3 text-sm"
             >
               <option value="all">All Questions</option>
@@ -166,7 +183,9 @@ const QuestionsFeed = () => {
             </select>
             <select
               value={filters.timeRange}
-              onChange={(e) => handleFilterChange({ ...filters, timeRange: e.target.value })}
+              onChange={e =>
+                handleFilterChange({ ...filters, timeRange: e.target.value })
+              }
               className="input-field py-1 px-3 text-sm"
             >
               <option value="all">All Time</option>
@@ -251,26 +270,33 @@ const QuestionsFeed = () => {
             >
               Previous
             </button>
-            
-            {Array.from({ length: Math.min(5, questionsData.totalPages) }, (_, i) => {
-              const page = i + 1
-              return (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-2 rounded-lg font-medium transition-colors ${
-                    currentPage === page
-                      ? 'bg-primary-600 text-white'
-                      : 'btn-outline'
-                  }`}
-                >
-                  {page}
-                </button>
-              )
-            })}
-            
+
+            {Array.from(
+              { length: Math.min(5, questionsData.totalPages) },
+              (_, i) => {
+                const page = i + 1;
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-2 rounded-lg font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-primary-600 text-white'
+                        : 'btn-outline'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              }
+            )}
+
             <button
-              onClick={() => setCurrentPage(Math.min(questionsData.totalPages, currentPage + 1))}
+              onClick={() =>
+                setCurrentPage(
+                  Math.min(questionsData.totalPages, currentPage + 1)
+                )
+              }
               disabled={currentPage === questionsData.totalPages}
               className="btn-outline px-3 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -283,11 +309,13 @@ const QuestionsFeed = () => {
       {/* Results info */}
       {questionsData && (
         <div className="text-center mt-8 text-sm text-navy-500 dark:text-navy-400">
-          Showing {((currentPage - 1) * 10) + 1} to {Math.min(currentPage * 10, questionsData.total)} of {questionsData.total} questions
+          Showing {(currentPage - 1) * 10 + 1} to{' '}
+          {Math.min(currentPage * 10, questionsData.total)} of{' '}
+          {questionsData.total} questions
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default QuestionsFeed 
+export default QuestionsFeed;

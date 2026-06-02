@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 const Answer = require('../models/Answer');
 const Question = require('../models/Question');
 const Notification = require('../models/Notification');
+const { acceptAnswer } = require('../services/answerAcceptance');
 
 // Import controllers
 const answersController = require('../controllers/answersController');
@@ -128,7 +129,7 @@ router.delete('/:answerId', authenticateToken, async (req, res) => {
     }
     
     console.log('✅ User authorized, proceeding with deletion')
-    // Answer count is automatically updated by Answer model pre-remove middleware
+    // Answer count is automatically updated by Answer model pre-delete middleware
     await answer.deleteOne();
     console.log('✅ Answer deleted successfully')
     
@@ -149,30 +150,19 @@ router.post('/:answerId/downvote', authenticateToken, answersController.downvote
 router.post('/:answerId/accept', authenticateToken, async (req, res) => {
   try {
     const { answerId } = req.params;
-    const answer = await Answer.findById(answerId).populate('question');
+    const answer = await Answer.findById(answerId);
     if (!answer) return res.status(404).json({ message: 'Answer not found.' });
-    const question = await Question.findById(answer.question._id);
-    if (!question) return res.status(404).json({ message: 'Question not found.' });
-    if (String(question.author) !== String(req.user._id)) {
-      return res.status(403).json({ message: 'Only the question owner can accept an answer.' });
-    }
-    question.acceptedAnswer = answer._id;
-    await question.save();
-    // Notify answer author (if not self)
-    if (String(answer.author) !== String(req.user._id)) {
-      await Notification.create({
-        recipient: answer.author,
-        type: 'accepted',
-        content: `Your answer was accepted!`,
-        questionId: question._id,
-        answerId: answer._id,
-        sender: req.user._id,
-      });
-    }
-    res.json({ message: 'Answer accepted.', acceptedAnswer: answer._id });
+
+    const { answer: acceptedAnswer } = await acceptAnswer({
+      questionId: answer.question,
+      answerId,
+      acceptedBy: req.user._id
+    });
+
+    res.json({ message: 'Answer accepted.', acceptedAnswer: acceptedAnswer._id });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to accept answer', error: err.message });
+    res.status(err.statusCode || 500).json({ message: err.message || 'Failed to accept answer' });
   }
 });
 
-module.exports = router; 
+module.exports = router;

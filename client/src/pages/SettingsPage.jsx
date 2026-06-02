@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from 'react-query'
-import { motion } from 'framer-motion'
-import { toast } from 'react-hot-toast'
-import { 
-  FiUser, 
-  FiMail, 
-  FiLock, 
-  FiBell, 
-  FiMoon, 
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import {
+  FiUser,
+  FiMail,
+  FiLock,
+  FiBell,
+  FiMoon,
   FiSun,
   FiEye,
   FiEyeOff,
@@ -19,33 +19,33 @@ import {
   FiShield,
   FiKey,
   FiGlobe,
-  FiSmartphone
-} from 'react-icons/fi'
-import api from '../utils/api'
-import { useAuth } from '../contexts/AuthContext'
-import { useTheme } from '../contexts/ThemeContext'
+  FiSmartphone,
+} from 'react-icons/fi';
+import api from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 const SettingsPage = () => {
-  const { user, updateUser } = useAuth()
-  const { theme, toggleTheme } = useTheme()
-  const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState('profile')
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const { user, updateUser } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('profile');
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Form states
   const [profileData, setProfileData] = useState({
     username: '',
     email: '',
     bio: '',
-    avatar: null
-  })
+    avatar: null,
+  });
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
-  })
+    confirmPassword: '',
+  });
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -53,18 +53,18 @@ const SettingsPage = () => {
     weeklyDigest: false,
     mentionNotifications: true,
     answerNotifications: true,
-    voteNotifications: true
-  })
+    voteNotifications: true,
+  });
 
   // Fetch user data
   const { data: userData, isLoading } = useQuery(
     ['user-settings'],
-    () => api.get('/users/profile').then(res => res.data),
+    () => api.get('api/users/profile').then(res => res.data),
     {
       enabled: !!user,
       staleTime: 300000, // 5 minutes
     }
-  )
+  );
 
   // Initialize form data when user data is loaded
   useEffect(() => {
@@ -73,140 +73,162 @@ const SettingsPage = () => {
         username: userData.username || '',
         email: userData.email || '',
         bio: userData.bio || '',
-        avatar: null
-      })
+        avatar: null,
+      });
       setPreferences({
         emailNotifications: userData.preferences?.emailNotifications ?? true,
         pushNotifications: userData.preferences?.pushNotifications ?? true,
         weeklyDigest: userData.preferences?.weeklyDigest ?? false,
-        mentionNotifications: userData.preferences?.mentionNotifications ?? true,
+        mentionNotifications:
+          userData.preferences?.mentionNotifications ?? true,
         answerNotifications: userData.preferences?.answerNotifications ?? true,
-        voteNotifications: userData.preferences?.voteNotifications ?? true
-      })
+        voteNotifications: userData.preferences?.voteNotifications ?? true,
+      });
     }
-  }, [userData])
+  }, [userData]);
 
   // Mutations
   const updateProfileMutation = useMutation(
-    (data) => api.put('/users/profile', data),
+    data => api.put('api/users/profile', data),
     {
-      onSuccess: (data) => {
-        queryClient.invalidateQueries(['user-settings'])
-        updateUser(data.user)
-        toast.success('Profile updated successfully!')
+      onSuccess: data => {
+        queryClient.invalidateQueries(['user-settings']);
+        updateUser(data.user);
+        toast.success('Profile updated successfully!');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to update profile')
-      }
+      onError: error => {
+        toast.error(
+          error.response?.data?.message || 'Failed to update profile'
+        );
+      },
     }
-  )
+  );
 
   const changePasswordMutation = useMutation(
-    (data) => api.put('/users/change-password', data),
+    data => api.put('api/users/change-password', data),
     {
       onSuccess: () => {
-        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' })
-        setShowPasswordForm(false)
-        toast.success('Password changed successfully!')
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setShowPasswordForm(false);
+        toast.success('Password changed successfully!');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to change password')
-      }
+      onError: error => {
+        toast.error(
+          error.response?.data?.message || 'Failed to change password'
+        );
+      },
     }
-  )
+  );
 
   const updatePreferencesMutation = useMutation(
-    (data) => api.put('/users/preferences', data),
+    data => api.put('api/users/preferences', data),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['user-settings'])
-        toast.success('Preferences updated successfully!')
+        queryClient.invalidateQueries(['user-settings']);
+        toast.success('Preferences updated successfully!');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to update preferences')
-      }
+      onError: error => {
+        toast.error(
+          error.response?.data?.message || 'Failed to update preferences'
+        );
+      },
     }
-  )
+  );
 
   const deleteAccountMutation = useMutation(
-    () => api.delete('/users/account'),
+    () => api.delete('api/users/account'),
     {
       onSuccess: () => {
-        toast.success('Account deleted successfully')
+        toast.success('Account deleted successfully');
         // Redirect to logout
-        window.location.href = '/logout'
+        window.location.href = '/logout';
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to delete account')
-      }
+      onError: error => {
+        toast.error(
+          error.response?.data?.message || 'Failed to delete account'
+        );
+      },
     }
-  )
+  );
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: FiUser },
     { id: 'security', label: 'Security', icon: FiShield },
     { id: 'notifications', label: 'Notifications', icon: FiBell },
-    { id: 'appearance', label: 'Appearance', icon: theme === 'dark' ? FiMoon : FiSun },
-    { id: 'danger', label: 'Danger Zone', icon: FiTrash2 }
-  ]
+    {
+      id: 'appearance',
+      label: 'Appearance',
+      icon: theme === 'dark' ? FiMoon : FiSun,
+    },
+    { id: 'danger', label: 'Danger Zone', icon: FiTrash2 },
+  ];
 
-  const handleProfileSubmit = (e) => {
-    e.preventDefault()
+  const handleProfileSubmit = e => {
+    e.preventDefault();
     if (!profileData.username.trim()) {
-      toast.error('Username is required')
-      return
+      toast.error('Username is required');
+      return;
     }
-    
-    const formData = new FormData()
-    formData.append('username', profileData.username)
-    formData.append('email', profileData.email)
-    formData.append('bio', profileData.bio)
-    if (profileData.avatar) {
-      formData.append('avatar', profileData.avatar)
-    }
-    
-    updateProfileMutation.mutate(formData)
-  }
 
-  const handlePasswordSubmit = (e) => {
-    e.preventDefault()
+    const formData = new FormData();
+    formData.append('username', profileData.username);
+    formData.append('email', profileData.email);
+    formData.append('bio', profileData.bio);
+    if (profileData.avatar) {
+      formData.append('avatar', profileData.avatar);
+    }
+
+    updateProfileMutation.mutate(formData);
+  };
+
+  const handlePasswordSubmit = e => {
+    e.preventDefault();
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('New passwords do not match')
-      return
+      toast.error('New passwords do not match');
+      return;
     }
     if (passwordData.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters long')
-      return
+      toast.error('Password must be at least 6 characters long');
+      return;
     }
-    
+
     changePasswordMutation.mutate({
       currentPassword: passwordData.currentPassword,
-      newPassword: passwordData.newPassword
-    })
-  }
+      newPassword: passwordData.newPassword,
+    });
+  };
 
   const handlePreferencesChange = (key, value) => {
-    const newPreferences = { ...preferences, [key]: value }
-    setPreferences(newPreferences)
-    updatePreferencesMutation.mutate(newPreferences)
-  }
+    const newPreferences = { ...preferences, [key]: value };
+    setPreferences(newPreferences);
+    updatePreferencesMutation.mutate(newPreferences);
+  };
 
   const handleDeleteAccount = () => {
-    if (window.confirm('Are you absolutely sure? This action cannot be undone and will permanently delete your account and all associated data.')) {
-      deleteAccountMutation.mutate()
+    if (
+      window.confirm(
+        'Are you absolutely sure? This action cannot be undone and will permanently delete your account and all associated data.'
+      )
+    ) {
+      deleteAccountMutation.mutate();
     }
-  }
+  };
 
-  const handleAvatarChange = (e) => {
-    const file = e.target.files[0]
+  const handleAvatarChange = e => {
+    const file = e.target.files[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('Avatar file size must be less than 5MB')
-        return
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
+        toast.error('Avatar file size must be less than 5MB');
+        return;
       }
-      setProfileData({ ...profileData, avatar: file })
+      setProfileData({ ...profileData, avatar: file });
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -216,7 +238,7 @@ const SettingsPage = () => {
           <div className="h-64 bg-navy-200 dark:bg-navy-700 rounded"></div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -239,8 +261,8 @@ const SettingsPage = () => {
           className="lg:w-64 flex-shrink-0"
         >
           <nav className="space-y-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
+            {tabs.map(tab => {
+              const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
@@ -254,7 +276,7 @@ const SettingsPage = () => {
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{tab.label}</span>
                 </button>
-              )
+              );
             })}
           </nav>
         </motion.div>
@@ -270,7 +292,7 @@ const SettingsPage = () => {
               <h2 className="text-xl font-semibold text-navy-900 dark:text-white mb-6">
                 Profile Information
               </h2>
-              
+
               <form onSubmit={handleProfileSubmit} className="space-y-6">
                 {/* Avatar */}
                 <div className="flex items-center space-x-6">
@@ -306,7 +328,12 @@ const SettingsPage = () => {
                   <input
                     type="text"
                     value={profileData.username}
-                    onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
+                    onChange={e =>
+                      setProfileData({
+                        ...profileData,
+                        username: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-navy-300 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
                     required
                   />
@@ -320,7 +347,9 @@ const SettingsPage = () => {
                   <input
                     type="email"
                     value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    onChange={e =>
+                      setProfileData({ ...profileData, email: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-navy-300 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
                   />
                 </div>
@@ -332,7 +361,9 @@ const SettingsPage = () => {
                   </label>
                   <textarea
                     value={profileData.bio}
-                    onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                    onChange={e =>
+                      setProfileData({ ...profileData, bio: e.target.value })
+                    }
                     rows="4"
                     placeholder="Tell us about yourself..."
                     className="w-full px-3 py-2 border border-navy-300 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-navy-800 text-navy-900 dark:text-white resize-none"
@@ -346,7 +377,9 @@ const SettingsPage = () => {
                     className="btn-primary disabled:opacity-50"
                   >
                     <FiSave className="w-4 h-4 mr-2" />
-                    {updateProfileMutation.isLoading ? 'Saving...' : 'Save Changes'}
+                    {updateProfileMutation.isLoading
+                      ? 'Saving...'
+                      : 'Save Changes'}
                   </button>
                 </div>
               </form>
@@ -358,7 +391,7 @@ const SettingsPage = () => {
               <h2 className="text-xl font-semibold text-navy-900 dark:text-white mb-6">
                 Security Settings
               </h2>
-              
+
               <div className="space-y-6">
                 {/* Change Password */}
                 <div>
@@ -381,7 +414,10 @@ const SettingsPage = () => {
                   </div>
 
                   {showPasswordForm && (
-                    <form onSubmit={handlePasswordSubmit} className="space-y-4 p-4 bg-navy-50 dark:bg-navy-800 rounded-lg">
+                    <form
+                      onSubmit={handlePasswordSubmit}
+                      className="space-y-4 p-4 bg-navy-50 dark:bg-navy-800 rounded-lg"
+                    >
                       <div>
                         <label className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-2">
                           Current Password
@@ -389,7 +425,12 @@ const SettingsPage = () => {
                         <input
                           type="password"
                           value={passwordData.currentPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                          onChange={e =>
+                            setPasswordData({
+                              ...passwordData,
+                              currentPassword: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-navy-300 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
                           required
                         />
@@ -402,7 +443,12 @@ const SettingsPage = () => {
                         <input
                           type="password"
                           value={passwordData.newPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                          onChange={e =>
+                            setPasswordData({
+                              ...passwordData,
+                              newPassword: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-navy-300 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
                           required
                         />
@@ -415,7 +461,12 @@ const SettingsPage = () => {
                         <input
                           type="password"
                           value={passwordData.confirmPassword}
-                          onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                          onChange={e =>
+                            setPasswordData({
+                              ...passwordData,
+                              confirmPassword: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-navy-300 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
                           required
                         />
@@ -434,7 +485,9 @@ const SettingsPage = () => {
                           disabled={changePasswordMutation.isLoading}
                           className="btn-primary disabled:opacity-50"
                         >
-                          {changePasswordMutation.isLoading ? 'Changing...' : 'Change Password'}
+                          {changePasswordMutation.isLoading
+                            ? 'Changing...'
+                            : 'Change Password'}
                         </button>
                       </div>
                     </form>
@@ -467,19 +520,28 @@ const SettingsPage = () => {
               <h2 className="text-xl font-semibold text-navy-900 dark:text-white mb-6">
                 Notification Preferences
               </h2>
-              
+
               <div className="space-y-6">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-navy-900 dark:text-white">Email Notifications</h3>
-                      <p className="text-sm text-navy-600 dark:text-navy-400">Receive notifications via email</p>
+                      <h3 className="font-medium text-navy-900 dark:text-white">
+                        Email Notifications
+                      </h3>
+                      <p className="text-sm text-navy-600 dark:text-navy-400">
+                        Receive notifications via email
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={preferences.emailNotifications}
-                        onChange={(e) => handlePreferencesChange('emailNotifications', e.target.checked)}
+                        onChange={e =>
+                          handlePreferencesChange(
+                            'emailNotifications',
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-navy-200 dark:bg-navy-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-navy-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-navy-600 peer-checked:bg-primary-600"></div>
@@ -488,14 +550,23 @@ const SettingsPage = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-navy-900 dark:text-white">Push Notifications</h3>
-                      <p className="text-sm text-navy-600 dark:text-navy-400">Receive browser push notifications</p>
+                      <h3 className="font-medium text-navy-900 dark:text-white">
+                        Push Notifications
+                      </h3>
+                      <p className="text-sm text-navy-600 dark:text-navy-400">
+                        Receive browser push notifications
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={preferences.pushNotifications}
-                        onChange={(e) => handlePreferencesChange('pushNotifications', e.target.checked)}
+                        onChange={e =>
+                          handlePreferencesChange(
+                            'pushNotifications',
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-navy-200 dark:bg-navy-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-navy-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-navy-600 peer-checked:bg-primary-600"></div>
@@ -504,14 +575,23 @@ const SettingsPage = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-navy-900 dark:text-white">Weekly Digest</h3>
-                      <p className="text-sm text-navy-600 dark:text-navy-400">Receive a weekly summary of activity</p>
+                      <h3 className="font-medium text-navy-900 dark:text-white">
+                        Weekly Digest
+                      </h3>
+                      <p className="text-sm text-navy-600 dark:text-navy-400">
+                        Receive a weekly summary of activity
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={preferences.weeklyDigest}
-                        onChange={(e) => handlePreferencesChange('weeklyDigest', e.target.checked)}
+                        onChange={e =>
+                          handlePreferencesChange(
+                            'weeklyDigest',
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-navy-200 dark:bg-navy-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-navy-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-navy-600 peer-checked:bg-primary-600"></div>
@@ -520,14 +600,23 @@ const SettingsPage = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-navy-900 dark:text-white">Mention Notifications</h3>
-                      <p className="text-sm text-navy-600 dark:text-navy-400">When someone mentions you</p>
+                      <h3 className="font-medium text-navy-900 dark:text-white">
+                        Mention Notifications
+                      </h3>
+                      <p className="text-sm text-navy-600 dark:text-navy-400">
+                        When someone mentions you
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={preferences.mentionNotifications}
-                        onChange={(e) => handlePreferencesChange('mentionNotifications', e.target.checked)}
+                        onChange={e =>
+                          handlePreferencesChange(
+                            'mentionNotifications',
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-navy-200 dark:bg-navy-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-navy-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-navy-600 peer-checked:bg-primary-600"></div>
@@ -536,14 +625,23 @@ const SettingsPage = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-navy-900 dark:text-white">Answer Notifications</h3>
-                      <p className="text-sm text-navy-600 dark:text-navy-400">When someone answers your question</p>
+                      <h3 className="font-medium text-navy-900 dark:text-white">
+                        Answer Notifications
+                      </h3>
+                      <p className="text-sm text-navy-600 dark:text-navy-400">
+                        When someone answers your question
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={preferences.answerNotifications}
-                        onChange={(e) => handlePreferencesChange('answerNotifications', e.target.checked)}
+                        onChange={e =>
+                          handlePreferencesChange(
+                            'answerNotifications',
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-navy-200 dark:bg-navy-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-navy-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-navy-600 peer-checked:bg-primary-600"></div>
@@ -552,14 +650,23 @@ const SettingsPage = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-navy-900 dark:text-white">Vote Notifications</h3>
-                      <p className="text-sm text-navy-600 dark:text-navy-400">When someone votes on your content</p>
+                      <h3 className="font-medium text-navy-900 dark:text-white">
+                        Vote Notifications
+                      </h3>
+                      <p className="text-sm text-navy-600 dark:text-navy-400">
+                        When someone votes on your content
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={preferences.voteNotifications}
-                        onChange={(e) => handlePreferencesChange('voteNotifications', e.target.checked)}
+                        onChange={e =>
+                          handlePreferencesChange(
+                            'voteNotifications',
+                            e.target.checked
+                          )
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-navy-200 dark:bg-navy-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-navy-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-navy-600 peer-checked:bg-primary-600"></div>
@@ -575,7 +682,7 @@ const SettingsPage = () => {
               <h2 className="text-xl font-semibold text-navy-900 dark:text-white mb-6">
                 Appearance Settings
               </h2>
-              
+
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -586,10 +693,7 @@ const SettingsPage = () => {
                       Choose your preferred theme
                     </p>
                   </div>
-                  <button
-                    onClick={toggleTheme}
-                    className="btn-outline"
-                  >
+                  <button onClick={toggleTheme} className="btn-outline">
                     {theme === 'dark' ? (
                       <>
                         <FiSun className="w-4 h-4 mr-2" />
@@ -631,14 +735,15 @@ const SettingsPage = () => {
               <h2 className="text-xl font-semibold text-red-900 dark:text-red-100 mb-6">
                 Danger Zone
               </h2>
-              
+
               <div className="space-y-6">
                 <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
                   <h3 className="text-lg font-medium text-red-900 dark:text-red-100 mb-2">
                     Delete Account
                   </h3>
                   <p className="text-sm text-red-700 dark:text-red-300 mb-4">
-                    Once you delete your account, there is no going back. Please be certain.
+                    Once you delete your account, there is no going back. Please
+                    be certain.
                   </p>
                   <button
                     onClick={handleDeleteAccount}
@@ -646,7 +751,9 @@ const SettingsPage = () => {
                     className="btn-danger disabled:opacity-50"
                   >
                     <FiTrash2 className="w-4 h-4 mr-2" />
-                    {deleteAccountMutation.isLoading ? 'Deleting...' : 'Delete Account'}
+                    {deleteAccountMutation.isLoading
+                      ? 'Deleting...'
+                      : 'Delete Account'}
                   </button>
                 </div>
               </div>
@@ -655,7 +762,7 @@ const SettingsPage = () => {
         </motion.div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default SettingsPage 
+export default SettingsPage;

@@ -1,141 +1,145 @@
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from 'react-query'
-import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  FiBell, 
-  FiCheck, 
-  FiTrash2, 
-  FiMessageSquare, 
-  FiThumbsUp, 
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  FiBell,
+  FiCheck,
+  FiTrash2,
+  FiMessageSquare,
+  FiThumbsUp,
   FiThumbsDown,
-  FiX
-} from 'react-icons/fi'
-import { toast } from 'react-hot-toast'
-import api from '../utils/api'
-import { useAuth } from '../contexts/AuthContext'
+  FiX,
+} from 'react-icons/fi';
+import { toast } from 'react-hot-toast';
+import api from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const NotificationDropdown = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  const { user } = useAuth()
-  const queryClient = useQueryClient()
+  const [isOpen, setIsOpen] = useState(false);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   // Fetch notifications
   const { data: notificationsData, isLoading } = useQuery(
     ['notifications'],
-    () => api.get('/notifications?limit=10').then(res => res.data),
+    () => api.get('api/notifications?limit=10').then(res => res.data),
     {
       refetchInterval: 10000, // Poll every 10 seconds
-      enabled: !!user
+      enabled: !!user,
     }
-  )
+  );
 
   // Fetch unread count
   const { data: unreadData } = useQuery(
     ['notifications', 'unread'],
-    () => api.get('/notifications/unread-count').then(res => res.data),
+    () => api.get('api/notifications/unread-count').then(res => res.data),
     {
       refetchInterval: 5000, // Poll every 5 seconds
-      enabled: !!user
+      enabled: !!user,
     }
-  )
+  );
 
-  const unreadCount = unreadData?.unreadCount || 0
-  const notifications = notificationsData?.notifications || []
+  const unreadCount = unreadData?.unreadCount || 0;
+  const notifications = notificationsData?.notifications || [];
 
   // Mark notification as read
   const markAsReadMutation = useMutation(
-    (notificationId) => api.put(`/notifications/${notificationId}/read`),
+    notificationId => api.put(`api/notifications/${notificationId}/read`),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['notifications'])
-        queryClient.invalidateQueries(['notifications', 'unread'])
-      }
+        queryClient.invalidateQueries(['notifications']);
+        queryClient.invalidateQueries(['notifications', 'unread']);
+      },
     }
-  )
+  );
 
   // Mark all as read
   const markAllAsReadMutation = useMutation(
-    () => api.put('/notifications/read-all'),
+    () => api.put('api/notifications/read-all'),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['notifications'])
-        queryClient.invalidateQueries(['notifications', 'unread'])
-        toast.success('All notifications marked as read')
+        queryClient.invalidateQueries(['notifications']);
+        queryClient.invalidateQueries(['notifications', 'unread']);
+        toast.success('All notifications marked as read');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to mark all as read')
-      }
+      onError: error => {
+        toast.error(
+          error.response?.data?.message || 'Failed to mark all as read'
+        );
+      },
     }
-  )
+  );
 
   // Delete notification
   const deleteNotificationMutation = useMutation(
-    (notificationId) => api.delete(`/notifications/${notificationId}`),
+    notificationId => api.delete(`api/notifications/${notificationId}`),
     {
       onSuccess: () => {
-        queryClient.invalidateQueries(['notifications'])
-        queryClient.invalidateQueries(['notifications', 'unread'])
-        toast.success('Notification deleted')
+        queryClient.invalidateQueries(['notifications']);
+        queryClient.invalidateQueries(['notifications', 'unread']);
+        toast.success('Notification deleted');
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to delete notification')
-      }
+      onError: error => {
+        toast.error(
+          error.response?.data?.message || 'Failed to delete notification'
+        );
+      },
     }
-  )
+  );
 
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = notification => {
     if (!notification.read) {
-      markAsReadMutation.mutate(notification._id)
+      markAsReadMutation.mutate(notification._id);
     }
-    setIsOpen(false)
-  }
+    setIsOpen(false);
+  };
 
   const handleMarkAllAsRead = () => {
-    markAllAsReadMutation.mutate()
-  }
+    markAllAsReadMutation.mutate();
+  };
 
   const handleDeleteNotification = (e, notificationId) => {
-    e.stopPropagation()
-    deleteNotificationMutation.mutate(notificationId)
-  }
+    e.stopPropagation();
+    deleteNotificationMutation.mutate(notificationId);
+  };
 
-  const getNotificationIcon = (type) => {
+  const getNotificationIcon = type => {
     switch (type) {
       case 'comment':
-        return <FiMessageSquare className="w-4 h-4" />
+        return <FiMessageSquare className="w-4 h-4" />;
       case 'upvote':
-        return <FiThumbsUp className="w-4 h-4 text-green-600" />
+        return <FiThumbsUp className="w-4 h-4 text-green-600" />;
       case 'downvote':
-        return <FiThumbsDown className="w-4 h-4 text-red-600" />
+        return <FiThumbsDown className="w-4 h-4 text-red-600" />;
       case 'accepted':
-        return <FiCheck className="w-4 h-4 text-green-600" />
+        return <FiCheck className="w-4 h-4 text-green-600" />;
       default:
-        return <FiBell className="w-4 h-4" />
+        return <FiBell className="w-4 h-4" />;
     }
-  }
+  };
 
-  const getNotificationLink = (notification) => {
+  const getNotificationLink = notification => {
     if (notification.questionId) {
-      return `/questions/${notification.questionId}`
+      return `/questions/${notification.questionId}`;
     }
-    return '/notifications'
-  }
+    return '/notifications';
+  };
 
-  const formatTimeAgo = (date) => {
-    const now = new Date()
-    const diff = now - new Date(date)
-    const minutes = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
+  const formatTimeAgo = date => {
+    const now = new Date();
+    const diff = now - new Date(date);
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes}m ago`
-    if (hours < 24) return `${hours}h ago`
-    return `${days}d ago`
-  }
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    return `${days}d ago`;
+  };
 
-  if (!user) return null
+  if (!user) return null;
 
   return (
     <div className="relative">
@@ -196,7 +200,7 @@ const NotificationDropdown = () => {
                   No notifications yet
                 </div>
               ) : (
-                notifications.map((notification) => (
+                notifications.map(notification => (
                   <motion.div
                     key={notification._id}
                     initial={{ opacity: 0, x: -20 }}
@@ -220,7 +224,9 @@ const NotificationDropdown = () => {
                               {formatTimeAgo(notification.createdAt)}
                             </span>
                             <button
-                              onClick={(e) => handleDeleteNotification(e, notification._id)}
+                              onClick={e =>
+                                handleDeleteNotification(e, notification._id)
+                              }
                               className="text-navy-400 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <FiTrash2 className="w-3 h-3" />
@@ -256,7 +262,7 @@ const NotificationDropdown = () => {
         )}
       </AnimatePresence>
     </div>
-  )
-}
+  );
+};
 
-export default NotificationDropdown 
+export default NotificationDropdown;

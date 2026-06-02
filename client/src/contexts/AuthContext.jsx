@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-hot-toast'
 import api, { API_BASE_URL } from '../utils/api'
 
-const AuthContext = createContext()
+const AuthContext = createContext();
 
 // Session duration: 7 days in milliseconds
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000
@@ -29,12 +29,12 @@ const isSessionValid = () => {
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
-}
+  return context;
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -53,8 +53,8 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate()
 
   useEffect(() => {
-    checkAuth()
-  }, [])
+    checkAuth();
+  }, []);
 
   const checkAuth = async () => {
     try {
@@ -84,9 +84,9 @@ export const AuthProvider = ({ children }) => {
         }
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const login = async (email, password) => {
     try {
@@ -108,9 +108,9 @@ export const AuthProvider = ({ children }) => {
       toast.error(message)
       return { success: false, error: message }
     }
-  }
+  };
 
-  const signup = async (userData) => {
+  const signup = async userData => {
     try {
       const response = await api.post('/auth/signup', userData)
       const { token, user } = response.data
@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }) => {
       toast.error(message)
       return { success: false, error: message }
     }
-  }
+  };
 
   const startOAuthLogin = useCallback((provider) => {
     const apiBaseUrl = API_BASE_URL.replace(/\/$/, '')
@@ -168,7 +168,7 @@ export const AuthProvider = ({ children }) => {
     navigate('/')
   }
 
-  const updateProfile = async (userData) => {
+  const updateProfile = async userData => {
     try {
       const response = await api.put('/auth/profile', userData)
       const updatedUser = response.data.user
@@ -177,11 +177,11 @@ export const AuthProvider = ({ children }) => {
       toast.success('Profile updated successfully')
       return { success: true }
     } catch (error) {
-      const message = error.response?.data?.message || 'Update failed'
-      toast.error(message)
-      return { success: false, error: message }
+      const message = error.response?.data?.message || 'Update failed';
+      toast.error(message);
+      return { success: false, error: message };
     }
-  }
+  };
 
   const value = {
     user,
@@ -194,7 +194,7 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',
-  }
+  };
 
   return (
     <AuthContext.Provider value={value}>

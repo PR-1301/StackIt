@@ -144,7 +144,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       await Answer.findByIdAndUpdate(comment.contentId, { $inc: { commentCount: -1 } })
     }
 
-    await comment.remove()
+    await comment.deleteOne()
     res.json({ message: 'Comment deleted successfully' })
   } catch (error) {
     console.error('Error deleting comment:', error)
@@ -152,4 +152,4 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 })
 
-module.exports = router 
+module.exports = router

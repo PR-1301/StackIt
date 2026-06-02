@@ -174,7 +174,7 @@ router.delete('/account', authenticateToken, async (req, res) => {
     ])
 
     // Delete user
-    await user.remove()
+    await user.deleteOne()
 
     res.json({ message: 'Account deleted successfully' })
   } catch (error) {
@@ -183,4 +183,4 @@ router.delete('/account', authenticateToken, async (req, res) => {
   }
 })
 
-module.exports = router 
+module.exports = router

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
-import { useQuery } from 'react-query'
-import { FiTag, FiX } from 'react-icons/fi'
-import api from '../utils/api'
+import { useState, useEffect } from 'react';
+import { useQuery } from 'react-query';
+import { FiTag, FiX } from 'react-icons/fi';
+import api from '../utils/api';
 
 const TagFilter = ({ selectedTags, onTagChange }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { data: tagsData, isLoading } = useQuery(
     ['tags', searchTerm],
@@ -13,32 +13,32 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
     {
       staleTime: 300000, // 5 minutes
     }
-  )
+  );
 
   const fetchTags = async () => {
     const params = new URLSearchParams({
       search: searchTerm,
       limit: 20,
-    })
-    const response = await api.get(`/tags?${params}`)
-    return response.data
-  }
+    });
+    const response = await api.get(`api/tags?${params}`);
+    return response.data;
+  };
 
-  const handleTagToggle = (tag) => {
+  const handleTagToggle = tag => {
     const newTags = selectedTags.includes(tag)
       ? selectedTags.filter(t => t !== tag)
-      : [...selectedTags, tag]
-    onTagChange(newTags)
-  }
+      : [...selectedTags, tag];
+    onTagChange(newTags);
+  };
 
-  const removeTag = (tagToRemove) => {
-    const newTags = selectedTags.filter(tag => tag !== tagToRemove)
-    onTagChange(newTags)
-  }
+  const removeTag = tagToRemove => {
+    const newTags = selectedTags.filter(tag => tag !== tagToRemove);
+    onTagChange(newTags);
+  };
 
   const clearAllTags = () => {
-    onTagChange([])
-  }
+    onTagChange([]);
+  };
 
   return (
     <div className="mb-6">
@@ -48,7 +48,7 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
           <span className="text-sm font-medium text-navy-700 dark:text-navy-300">
             Filtered by:
           </span>
-          {selectedTags.map((tag) => (
+          {selectedTags.map(tag => (
             <div
               key={tag}
               className="badge badge-primary flex items-center space-x-1"
@@ -85,7 +85,12 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </button>
 
@@ -97,7 +102,7 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
                 type="text"
                 placeholder="Search tags..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 border border-navy-300 dark:border-navy-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-navy-800 text-navy-900 dark:text-white"
               />
             </div>
@@ -110,7 +115,7 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
                 </div>
               ) : tagsData?.tags?.length > 0 ? (
                 <div className="p-2">
-                  {tagsData.tags.map((tag) => (
+                  {tagsData.tags.map(tag => (
                     <button
                       key={tag.name}
                       onClick={() => handleTagToggle(tag.name)}
@@ -127,8 +132,16 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
                         </span>
                       </div>
                       {selectedTags.includes(tag.name) && (
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
                         </svg>
                       )}
                     </button>
@@ -148,7 +161,14 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
                   Popular Tags
                 </h4>
                 <div className="flex flex-wrap gap-1">
-                  {['javascript', 'react', 'nodejs', 'python', 'css', 'html'].map((tag) => (
+                  {[
+                    'javascript',
+                    'react',
+                    'nodejs',
+                    'python',
+                    'css',
+                    'html',
+                  ].map(tag => (
                     <button
                       key={tag}
                       onClick={() => handleTagToggle(tag)}
@@ -168,7 +188,7 @@ const TagFilter = ({ selectedTags, onTagChange }) => {
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default TagFilter 
+export default TagFilter;

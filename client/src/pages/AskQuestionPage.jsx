@@ -1,108 +1,115 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { useMutation, useQueryClient } from 'react-query'
-import { motion } from 'framer-motion'
-import { toast } from 'react-hot-toast'
-import { FiTag, FiX, FiHelpCircle } from 'react-icons/fi'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
-import api from '../utils/api'
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { useMutation, useQueryClient } from 'react-query';
+import { motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import { FiTag, FiX, FiHelpCircle } from 'react-icons/fi';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import api from '../utils/api';
 
 const AskQuestionPage = () => {
-  const [tags, setTags] = useState([])
-  const [tagInput, setTagInput] = useState('')
-  const [content, setContent] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
+  const [content, setContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm()
+  } = useForm();
 
   const createQuestionMutation = useMutation(
-    (questionData) => api.post('/questions', questionData),
+    questionData => api.post('api/questions', questionData),
     {
-      onSuccess: (data) => {
-        toast.success('Question posted successfully!')
-        queryClient.invalidateQueries(['questions'])
-        navigate(`/questions/${data.data.question._id}`)
+      onSuccess: data => {
+        toast.success('Question posted successfully!');
+        queryClient.invalidateQueries(['questions']);
+        navigate(`/questions/${data.data.question._id}`);
       },
-      onError: (error) => {
-        toast.error(error.response?.data?.message || 'Failed to post question')
+      onError: error => {
+        toast.error(error.response?.data?.message || 'Failed to post question');
       },
     }
-  )
+  );
 
-  const handleTagInputChange = (e) => {
-    setTagInput(e.target.value)
-  }
+  const handleTagInputChange = e => {
+    setTagInput(e.target.value);
+  };
 
-  const handleTagInputKeyDown = (e) => {
+  const handleTagInputKeyDown = e => {
     if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault()
-      addTag()
+      e.preventDefault();
+      addTag();
     }
-  }
+  };
 
   const addTag = () => {
-    const tag = tagInput.trim().toLowerCase()
+    const tag = tagInput.trim().toLowerCase();
     if (tag && !tags.includes(tag) && tags.length < 5) {
-      setTags([...tags, tag])
-      setTagInput('')
+      setTags([...tags, tag]);
+      setTagInput('');
     }
-  }
+  };
 
-  const removeTag = (tagToRemove) => {
-    setTags(tags.filter(tag => tag !== tagToRemove))
-  }
+  const removeTag = tagToRemove => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
 
-  const onSubmit = async (data) => {
+  const onSubmit = async data => {
     if (tags.length === 0) {
-      toast.error('Please add at least one tag')
-      return
+      toast.error('Please add at least one tag');
+      return;
     }
 
     if (content.trim().length < 20) {
-      toast.error('Question content must be at least 20 characters')
-      return
+      toast.error('Question content must be at least 20 characters');
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
       await createQuestionMutation.mutateAsync({
         title: data.title,
         content: content,
         tags: tags,
-      })
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const quillModules = {
     toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
+      [{ header: [1, 2, 3, false] }],
       ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'align': [] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      [{ color: [] }, { background: [] }],
+      [{ align: [] }],
       ['link', 'image', 'code-block'],
-      ['clean']
+      ['clean'],
     ],
-  }
+  };
 
   const quillFormats = [
     'header',
-    'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet',
-    'color', 'background',
+    'bold',
+    'italic',
+    'underline',
+    'strike',
+    'list',
+    'bullet',
+    'color',
+    'background',
     'align',
-    'link', 'image', 'code-block'
-  ]
+    'link',
+    'image',
+    'code-block',
+  ];
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -124,7 +131,10 @@ const AskQuestionPage = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Title */}
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-2">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-navy-700 dark:text-navy-300 mb-2"
+            >
               Title *
             </label>
             <input
@@ -206,7 +216,7 @@ const AskQuestionPage = () => {
               {/* Selected Tags */}
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {tags.map((tag) => (
+                  {tags.map(tag => (
                     <div
                       key={tag}
                       className="badge badge-primary flex items-center space-x-1"
@@ -228,8 +238,12 @@ const AskQuestionPage = () => {
               <div className="flex items-start space-x-2 text-sm text-navy-500 dark:text-navy-400">
                 <FiHelpCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p>Add up to 5 tags to describe what your question is about.</p>
-                  <p className="mt-1">Popular tags: javascript, react, nodejs, python, css, html</p>
+                  <p>
+                    Add up to 5 tags to describe what your question is about.
+                  </p>
+                  <p className="mt-1">
+                    Popular tags: javascript, react, nodejs, python, css, html
+                  </p>
                 </div>
               </div>
             </div>
@@ -260,7 +274,9 @@ const AskQuestionPage = () => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || tags.length === 0 || content.trim().length < 20}
+              disabled={
+                isSubmitting || tags.length === 0 || content.trim().length < 20
+              }
               className="btn-primary px-8 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
@@ -276,7 +292,7 @@ const AskQuestionPage = () => {
         </form>
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default AskQuestionPage 
+export default AskQuestionPage;

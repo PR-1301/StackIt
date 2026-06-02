@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios from 'axios';
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
@@ -7,7 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-})
+});
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -17,12 +17,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    return config
+    return config;
   },
   (error) => {
     return Promise.reject(error)
   }
-)
+);
 
 // Response interceptor to handle errors
 api.interceptors.response.use(
@@ -39,16 +39,16 @@ api.interceptors.response.use(
 
         // Use a flag to prevent multiple redirects
         if (!window.isRedirecting) {
-          window.isRedirecting = true
+          window.isRedirecting = true;
           setTimeout(() => {
-            window.location.href = '/login'
-            window.isRedirecting = false
-          }, 100)
+            window.location.href = '/login';
+            window.isRedirecting = false;
+          }, 100);
         }
       }
     }
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 
 export default api

@@ -13,8 +13,16 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['comment', 'upvote', 'downvote', 'accepted'],
+    enum: ['answer', 'comment', 'upvote', 'downvote', 'accepted'],
     required: true
+  },
+  title: {
+    type: String,
+    trim: true
+  },
+  content: {
+    type: String,
+    trim: true
   },
   questionId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -85,6 +93,8 @@ notificationSchema.statics.createNotification = async function(data) {
     recipient: data.recipient,
     sender: data.sender,
     type: data.type,
+    title: data.title,
+    content: data.content,
     questionId: data.questionId,
     answerId: data.answerId,
     commentId: data.commentId
@@ -113,11 +123,11 @@ notificationSchema.pre('save', async function(next) {
         .findOne({ recipient: this.recipient })
         .sort({ createdAt: 1 })
       if (oldestNotification) {
-        await oldestNotification.remove()
+        await oldestNotification.deleteOne()
       }
     }
   }
   next()
 })
 
-module.exports = mongoose.model('Notification', notificationSchema) 
+module.exports = mongoose.model('Notification', notificationSchema)

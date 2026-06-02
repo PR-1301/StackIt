@@ -142,7 +142,7 @@ router.delete('/tags/:id', authenticateToken, adminAuth, async (req, res) => {
       return res.status(400).json({ message: 'Cannot delete tag that is being used' })
     }
 
-    await tag.remove()
+    await tag.deleteOne()
     res.json({ message: 'Tag deleted successfully' })
   } catch (error) {
     console.error('Error deleting tag:', error)
@@ -285,4 +285,4 @@ router.delete('/:contentType/:contentId', authenticateToken, adminAuth, async (r
   }
 })
 
-module.exports = router 
+module.exports = router

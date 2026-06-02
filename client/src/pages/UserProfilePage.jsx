@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from 'react-query'
-import { motion } from 'framer-motion'
-import { 
-  FiUser, 
-  FiMail, 
-  FiCalendar, 
-  FiAward, 
-  FiMessageSquare, 
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery } from 'react-query';
+import { motion } from 'framer-motion';
+import {
+  FiUser,
+  FiMail,
+  FiCalendar,
+  FiAward,
+  FiMessageSquare,
   FiThumbsUp,
   FiEye,
   FiTag,
@@ -17,27 +17,31 @@ import {
   FiCheck,
   FiX,
   FiStar,
-  FiTrendingUp
-} from 'react-icons/fi'
-import api from '../utils/api'
-import { useAuth } from '../contexts/AuthContext'
-import QuestionCard from '../components/QuestionCard'
+  FiTrendingUp,
+} from 'react-icons/fi';
+import api from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
+import QuestionCard from '../components/QuestionCard';
 
 const UserProfilePage = () => {
-  const { username } = useParams()
-  const navigate = useNavigate()
-  const { user: currentUser } = useAuth()
-  const [activeTab, setActiveTab] = useState('questions')
+  const { username } = useParams();
+  const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const [activeTab, setActiveTab] = useState('questions');
 
   // Fetch user profile data
-  const { data: profileData, isLoading, error } = useQuery(
+  const {
+    data: profileData,
+    isLoading,
+    error,
+  } = useQuery(
     ['user-profile', username],
-    () => api.get(`/users/profile/${username}`).then(res => res.data),
+    () => api.get(`api/users/profile/${username}`).then(res => res.data),
     {
       staleTime: 300000, // 5 minutes
       refetchOnWindowFocus: false,
     }
-  )
+  );
 
   if (isLoading) {
     return (
@@ -51,7 +55,7 @@ const UserProfilePage = () => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -64,39 +68,66 @@ const UserProfilePage = () => {
           Back to Questions
         </button>
       </div>
-    )
+    );
   }
 
-  const { user, questions, answers, stats } = profileData
-  const isOwnProfile = currentUser && currentUser._id === user._id
+  const { user, questions, answers, stats } = profileData;
+  const isOwnProfile = currentUser && currentUser._id === user._id;
 
   const tabs = [
-    { id: 'questions', label: 'Questions', count: questions.length, icon: FiMessageSquare },
+    {
+      id: 'questions',
+      label: 'Questions',
+      count: questions.length,
+      icon: FiMessageSquare,
+    },
     { id: 'answers', label: 'Answers', count: answers.length, icon: FiCheck },
-    { id: 'activity', label: 'Activity', count: stats.totalActivity, icon: FiTrendingUp }
-  ]
+    {
+      id: 'activity',
+      label: 'Activity',
+      count: stats.totalActivity,
+      icon: FiTrendingUp,
+    },
+  ];
 
-  const formatDate = (date) => {
+  const formatDate = date => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
-    })
-  }
+      day: 'numeric',
+    });
+  };
 
-  const getReputationColor = (reputation) => {
-    if (reputation >= 1000) return 'text-yellow-600 dark:text-yellow-400'
-    if (reputation >= 500) return 'text-green-600 dark:text-green-400'
-    if (reputation >= 100) return 'text-blue-600 dark:text-blue-400'
-    return 'text-navy-600 dark:text-navy-400'
-  }
+  const getReputationColor = reputation => {
+    if (reputation >= 1000) return 'text-yellow-600 dark:text-yellow-400';
+    if (reputation >= 500) return 'text-green-600 dark:text-green-400';
+    if (reputation >= 100) return 'text-blue-600 dark:text-blue-400';
+    return 'text-navy-600 dark:text-navy-400';
+  };
 
-  const getReputationBadge = (reputation) => {
-    if (reputation >= 1000) return { text: 'Expert', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' }
-    if (reputation >= 500) return { text: 'Contributor', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' }
-    if (reputation >= 100) return { text: 'Member', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' }
-    return { text: 'New User', color: 'bg-navy-100 text-navy-800 dark:bg-navy-900 dark:text-navy-200' }
-  }
+  const getReputationBadge = reputation => {
+    if (reputation >= 1000)
+      return {
+        text: 'Expert',
+        color:
+          'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+      };
+    if (reputation >= 500)
+      return {
+        text: 'Contributor',
+        color:
+          'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      };
+    if (reputation >= 100)
+      return {
+        text: 'Member',
+        color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+      };
+    return {
+      text: 'New User',
+      color: 'bg-navy-100 text-navy-800 dark:bg-navy-900 dark:text-navy-200',
+    };
+  };
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -121,12 +152,14 @@ const UserProfilePage = () => {
             <div className="w-32 h-32 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center mb-4">
               <FiUser className="w-16 h-16 text-white" />
             </div>
-            
+
             <div className="text-center lg:text-left">
               <h1 className="text-2xl font-bold text-navy-900 dark:text-white mb-2">
                 {user.username}
               </h1>
-              <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getReputationBadge(user.reputation).color}`}>
+              <div
+                className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getReputationBadge(user.reputation).color}`}
+              >
                 {getReputationBadge(user.reputation).text}
               </div>
             </div>
@@ -136,14 +169,16 @@ const UserProfilePage = () => {
           <div className="flex-1">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="text-center">
-                <div className={`text-3xl font-bold ${getReputationColor(user.reputation)}`}>
+                <div
+                  className={`text-3xl font-bold ${getReputationColor(user.reputation)}`}
+                >
                   {user.reputation}
                 </div>
                 <div className="text-sm text-navy-600 dark:text-navy-400">
                   Reputation
                 </div>
               </div>
-              
+
               <div className="text-center">
                 <div className="text-3xl font-bold text-navy-900 dark:text-white">
                   {questions.length}
@@ -152,7 +187,7 @@ const UserProfilePage = () => {
                   Questions
                 </div>
               </div>
-              
+
               <div className="text-center">
                 <div className="text-3xl font-bold text-navy-900 dark:text-white">
                   {answers.length}
@@ -171,7 +206,7 @@ const UserProfilePage = () => {
                   <span>{user.email}</span>
                 </div>
               )}
-              
+
               <div className="flex items-center text-navy-600 dark:text-navy-400">
                 <FiCalendar className="w-4 h-4 mr-2" />
                 <span>Joined {formatDate(user.createdAt)}</span>
@@ -211,28 +246,36 @@ const UserProfilePage = () => {
           <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
             {stats.totalViews}
           </div>
-          <div className="text-sm text-navy-600 dark:text-navy-400">Total Views</div>
+          <div className="text-sm text-navy-600 dark:text-navy-400">
+            Total Views
+          </div>
         </div>
-        
+
         <div className="card p-4 text-center">
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
             {stats.acceptedAnswers}
           </div>
-          <div className="text-sm text-navy-600 dark:text-navy-400">Accepted Answers</div>
+          <div className="text-sm text-navy-600 dark:text-navy-400">
+            Accepted Answers
+          </div>
         </div>
-        
+
         <div className="card p-4 text-center">
           <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
             {stats.totalVotes}
           </div>
-          <div className="text-sm text-navy-600 dark:text-navy-400">Total Votes</div>
+          <div className="text-sm text-navy-600 dark:text-navy-400">
+            Total Votes
+          </div>
         </div>
-        
+
         <div className="card p-4 text-center">
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {stats.questionsThisMonth}
           </div>
-          <div className="text-sm text-navy-600 dark:text-navy-400">This Month</div>
+          <div className="text-sm text-navy-600 dark:text-navy-400">
+            This Month
+          </div>
         </div>
       </motion.div>
 
@@ -245,8 +288,8 @@ const UserProfilePage = () => {
       >
         <div className="border-b border-navy-200 dark:border-navy-700">
           <nav className="flex space-x-8">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
+            {tabs.map(tab => {
+              const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
@@ -263,7 +306,7 @@ const UserProfilePage = () => {
                     {tab.count}
                   </span>
                 </button>
-              )
+              );
             })}
           </nav>
         </div>
@@ -278,7 +321,7 @@ const UserProfilePage = () => {
         {activeTab === 'questions' && (
           <div className="space-y-6">
             {questions.length > 0 ? (
-              questions.map((question) => (
+              questions.map(question => (
                 <QuestionCard key={question._id} question={question} />
               ))
             ) : (
@@ -288,10 +331,9 @@ const UserProfilePage = () => {
                   No questions yet
                 </h3>
                 <p className="text-navy-600 dark:text-navy-400">
-                  {isOwnProfile 
+                  {isOwnProfile
                     ? "You haven't asked any questions yet. Start contributing to the community!"
-                    : "This user hasn't asked any questions yet."
-                  }
+                    : "This user hasn't asked any questions yet."}
                 </p>
                 {isOwnProfile && (
                   <button
@@ -309,7 +351,7 @@ const UserProfilePage = () => {
         {activeTab === 'answers' && (
           <div className="space-y-6">
             {answers.length > 0 ? (
-              answers.map((answer) => (
+              answers.map(answer => (
                 <div key={answer._id} className="card p-6">
                   <div className="flex items-start space-x-4">
                     <div className="flex flex-col items-center space-y-2">
@@ -317,17 +359,18 @@ const UserProfilePage = () => {
                         <FiThumbsUp className="w-5 h-5" />
                       </button>
                       <span className="text-lg font-semibold text-navy-900 dark:text-white">
-                        {answer.votes.upvotes.length - answer.votes.downvotes.length}
+                        {answer.votes.upvotes.length -
+                          answer.votes.downvotes.length}
                       </span>
                       <button className="p-2 text-navy-400 hover:text-red-600 dark:hover:text-red-400">
                         <FiThumbsUp className="w-5 h-5 transform rotate-180" />
                       </button>
                     </div>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="text-lg font-semibold text-navy-900 dark:text-white">
-                          <a 
+                          <a
                             href={`/questions/${answer.question._id}`}
                             className="hover:text-primary-600 dark:hover:text-primary-400"
                           >
@@ -337,16 +380,20 @@ const UserProfilePage = () => {
                         {answer.isAccepted && (
                           <div className="flex items-center text-green-600 dark:text-green-400">
                             <FiCheck className="w-4 h-4 mr-1" />
-                            <span className="text-sm font-medium">Accepted</span>
+                            <span className="text-sm font-medium">
+                              Accepted
+                            </span>
                           </div>
                         )}
                       </div>
-                      
-                      <div 
+
+                      <div
                         className="prose prose-navy dark:prose-invert max-w-none mb-4"
-                        dangerouslySetInnerHTML={{ __html: answer.content.substring(0, 200) + '...' }}
+                        dangerouslySetInnerHTML={{
+                          __html: answer.content.substring(0, 200) + '...',
+                        }}
                       />
-                      
+
                       <div className="flex items-center justify-between text-sm text-navy-500 dark:text-navy-400">
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-1">
@@ -371,10 +418,9 @@ const UserProfilePage = () => {
                   No answers yet
                 </h3>
                 <p className="text-navy-600 dark:text-navy-400">
-                  {isOwnProfile 
+                  {isOwnProfile
                     ? "You haven't answered any questions yet. Start helping others!"
-                    : "This user hasn't answered any questions yet."
-                  }
+                    : "This user hasn't answered any questions yet."}
                 </p>
                 {isOwnProfile && (
                   <button
@@ -397,11 +443,20 @@ const UserProfilePage = () => {
               </h3>
               <div className="space-y-4">
                 {stats.recentActivity?.map((activity, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-navy-50 dark:bg-navy-800 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center space-x-3 p-3 bg-navy-50 dark:bg-navy-800 rounded-lg"
+                  >
                     <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
-                      {activity.type === 'question' && <FiMessageSquare className="w-4 h-4 text-primary-600 dark:text-primary-400" />}
-                      {activity.type === 'answer' && <FiCheck className="w-4 h-4 text-green-600 dark:text-green-400" />}
-                      {activity.type === 'vote' && <FiThumbsUp className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />}
+                      {activity.type === 'question' && (
+                        <FiMessageSquare className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                      )}
+                      {activity.type === 'answer' && (
+                        <FiCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
+                      )}
+                      {activity.type === 'vote' && (
+                        <FiThumbsUp className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                      )}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm text-navy-700 dark:text-navy-300">
@@ -419,7 +474,7 @@ const UserProfilePage = () => {
         )}
       </motion.div>
     </div>
-  )
-}
+  );
+};
 
-export default UserProfilePage 
+export default UserProfilePage;

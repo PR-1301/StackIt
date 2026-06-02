@@ -167,10 +167,16 @@ answerSchema.pre('save', async function(next) {
   next()
 })
 
-// Pre-remove middleware to decrement question's answer count
-answerSchema.pre('remove', async function(next) {
+// Pre-delete middleware to decrement question's answer count
+answerSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
   const Question = mongoose.model('Question')
-  await Question.findByIdAndUpdate(this.question, { $inc: { answerCount: -1 } })
+  const update = { $inc: { answerCount: -1 } }
+
+  if (this.isAccepted) {
+    update.$unset = { acceptedAnswer: '' }
+  }
+
+  await Question.findByIdAndUpdate(this.question, update)
   next()
 })
 
@@ -182,4 +188,4 @@ answerSchema.methods.toJSON = function() {
   return answer
 }
 
-module.exports = mongoose.model('Answer', answerSchema) 
+module.exports = mongoose.model('Answer', answerSchema)
